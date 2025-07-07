@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AndiLabs AI Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-main {
+            flex: 1;
+            padding: 20px;
+            background: #fff;
+            overflow-y: auto;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .model-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .model-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #f0f0f0;
+            transition: background 0.3s;
+        }
+
+        .model-btn.active {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .chat-messages {
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            max-width: 80%;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .message.bot {
+            background: #f0f0f0;
+            align-self: flex-start;
+        }
+
+        .message.user {
+            background: #2c3e50;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2c3e50;
+            animation: typing 1.4s infinite;
+        }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .chat-input {
+            position: fixed;
+            bottom: 0;
+            left: 280px;
+            right: 0;
+            padding: 20px;
+            background: #fff;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .send-btn {
+            background: linear-gradient(45deg, #2c3e50, #2c3e50);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(44, 62, 80, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 300px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+        }
+
+        .chat-sessions {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .session-item {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+        }
+
+        .session-item.active {
+            background: #2c3e50;
+            color: white;
+        }
+
+        .new-chat-btn {
+            background-color: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+        }
+
+        .new-chat-btn:hover {
+            background-color: #34495e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(44, 62, 80, 0.4);
+        }
+
+        .new-chat-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="model-selector">
+                <button class="model-btn active" onclick="changeModel('Llama 3.2')">Llama 3.2</button>
+                <button class="model-btn" onclick="changeModel('Llama 3.2 Vision')">Vision</button>
+                <button class="model-btn" onclick="changeModel('CodeLlama')">Code</button>
+            </div>
+            <div class="status-indicator" id="statusIndicator">
+                🔴 Offline
+            </div>
+        </div>
+
+        <div class="chat-main">
+            <div class="chat-header">
+                <h2>AndiLabs AI Assistant</h2>
+                <button class="new-chat-btn" onclick="startNewChat()">New Chat</button>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <div>Hello! I'm your AndiLabs AI Assistant. I'm powered by Llama 3.2 and ready to help you with coding, analysis, creative tasks, and more. How can I assist you today?</div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+
+            <div class="chat-input">
+                <input type="text" class="input-field" id="userInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()" id="sendBtn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentModel = 'Llama 3.2';
+        let isConnected = false;
+        let messageHistory = [];
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && event.shiftKey) {
+                const input = document.getElementById('userInput');
+                input.value += '\n';
+            } else if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function addMessage(text, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `
+                <div>${text}</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingIndicator = messagesContainer.querySelector('.typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value = '';
+            addMessage(message, 'user');
+            showTypingIndicator();
+
+            try {
+                // Simulate API response
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const response = {
+                    textResponse: "I understand you're working with AndiLabs. How can I help you with your project?"
+                };
+
+                hideTypingIndicator();
+                addMessage(response.textResponse, 'bot');
+            } catch (error) {
+                console.error('Error:', error);
+                hideTypingIndicator();
+                addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+            }
+        }
+
+        function changeModel(model) {
+            currentModel = model;
+            addMessage(`Switched to ${model}`, 'bot');
+        }
+
+        function startNewChat() {
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = `
+                <div class="message bot">
+                    <div>Hello! I'm your AndiLabs AI Assistant. I'm powered by Llama 3.2 and ready to help you with coding, analysis, creative tasks, and more. How can I assist you today?</div>
+                    <div class="message-time">Just now</div>
+                </div>
+            `;
+            messageHistory = [];
+        }
+
+        // Add chat history management
+        function saveChatHistory() {
+            const history = {
+                timestamp: new Date().toISOString(),
+                messages: Array.from(document.querySelectorAll('.message')).map(msg => ({
+                    text: msg.querySelector('div:first-child').textContent,
+                    sender: msg.className.includes('user') ? 'user' : 'bot',
+                    time: msg.querySelector('.message-time').textContent
+                }))
+            };
+            
+            // Save to localStorage
+            let chats = JSON.parse(localStorage.getItem('chats') || '[]');
+            chats.unshift(history);
+            localStorage.setItem('chats', JSON.stringify(chats));
+            
+            // Update chat history UI
+            updateChatHistory();
+        }
+
+        function updateChatHistory() {
+            const chatHistory = document.getElementById('chatHistory');
+            const chats = JSON.parse(localStorage.getItem('chats') || '[]');
+            
+            if (chats.length > 0) {
+                chatHistory.style.display = 'block';
+                chatHistory.innerHTML = chats.map((chat, index) => `
+                    <div class="session-item" onclick="loadChat(${index})">
+                        ${chat.messages[0].text.substring(0, 50)}...
+                        <div class="message-time">${chat.timestamp}</div>
+                    </div>
+                `).join('');
+            } else {
+                chatHistory.style.display = 'none';
+            }
+        }
+
+        function loadChat(index) {
+            const chats = JSON.parse(localStorage.getItem('chats') || '[]');
+            const chat = chats[index];
+            
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = chat.messages.map(msg => `
+                <div class="message ${msg.sender}">
+                    <div>${msg.text}</div>
+                    <div class="message-time">${msg.time}</div>
+                </div>
+            `).join('');
+            
+            messageHistory = chat.messages;
+        }
+
+        // Initialize chat history
+        updateChatHistory();
+
+        // Add message to history when sent
+        document.getElementById('sendBtn').addEventListener('click', () => {
+            sendMessage();
+            saveChatHistory();
+        });
+    </script>
+</body>
+</html>
